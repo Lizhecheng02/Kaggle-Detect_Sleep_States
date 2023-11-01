@@ -3,9 +3,6 @@ from tqdm import tqdm
 import numpy as np
 import polars as pl
 import os
-save_dir = "predict_step"
-if not os.path.exists(save_dir):
-    os.makedirs(save_dir)
 
 class CFG:
     shift = 60
@@ -285,7 +282,6 @@ from torch.utils.data import DataLoader, Dataset,random_split
 from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts, CosineAnnealingLR, ReduceLROnPlateau,StepLR
 
 def save_model(model, optimizer, filename="checkpoint.pth.tar"):
-    filename = os.path.join(save_dir, filename)
     state = {
         'state_dict': model.state_dict(),
         'optimizer': optimizer.state_dict(),
@@ -293,7 +289,6 @@ def save_model(model, optimizer, filename="checkpoint.pth.tar"):
     torch.save(state, filename)
 
 def load_model(model, optimizer, filename="checkpoint.pth.tar"):
-    filename = os.path.join(save_dir, filename)
     checkpoint = torch.load(filename)
     model.load_state_dict(checkpoint['state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer'])
@@ -431,7 +426,7 @@ test_step_losses = []
 best_test_loss = float('inf')
 
 last_step_model_path = ""
-last_best_model_path = os.path.join(save_dir, "model_step_best.pth.tar")
+last_best_model_path = "model_step_best.pth.tar"
 
 for epoch in range(0, CFG.epochs):
     train_loss = 0.0
@@ -471,7 +466,7 @@ for epoch in range(0, CFG.epochs):
             logging.info(f"Epoch: {epoch}, Step: {now_step}, Train Loss These Steps: {train_step_loss}")
             print(f"Epoch: {epoch}, Step: {now_step}, Train Loss These Steps: {train_step_loss}")
             
-            current_step_model_path = os.path.join(save_dir, f"model_step_{now_step}.pth.tar")
+            current_step_model_path = f"model_step_{now_step}.pth.tar"
             save_model(model, optimizer, filename=current_step_model_path)
             logging.info(f"Model saved to {current_step_model_path}")
             print(f"Model saved to {current_step_model_path}")
@@ -489,7 +484,7 @@ for epoch in range(0, CFG.epochs):
             # 检查是否为最佳模型，并保存
             if current_test_loss < best_test_loss:
                 best_test_loss = current_test_loss
-                best_model_path = os.path.join(save_dir, f"model_step_best.pth.tar")
+                best_model_path = f"model_step_best.pth.tar"
                 
                 # 删除上一次保存的最佳模型文件
                 if last_best_model_path != best_model_path and os.path.exists(last_best_model_path):
