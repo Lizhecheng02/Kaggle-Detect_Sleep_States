@@ -3,6 +3,10 @@ from tqdm import tqdm
 import numpy as np
 import polars as pl
 import os
+save_dir = "predict_step"
+if not os.path.exists(save_dir):
+    os.makedirs(save_dir)
+
 class CFG:
     shift = 60
     seq_length = 360
