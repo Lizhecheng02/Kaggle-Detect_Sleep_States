@@ -106,14 +106,14 @@ class PrecTime(nn.Module):
         # print("The Final Dimension of FE1 is:", self.fe1out_shape)
 
         # 右侧特征提取分支
-        self.padding = 8
+        # self.padding = 8
         feature_extraction2_layer = []
         feature_extraction2_layer.extend([
             conv1d_block(
                 in_channels=self.input_channels,
                 out_channels=self.hidden_channels,
                 kernel_size=self.kernel_size,
-                padding=self.padding,
+                padding=8,
                 stride=self.stride,
                 dilation=4
             ),
@@ -121,7 +121,7 @@ class PrecTime(nn.Module):
                 in_channels=self.hidden_channels,
                 out_channels=self.hidden_channels,
                 kernel_size=self.kernel_size,
-                padding=self.padding,
+                padding=8,
                 stride=self.stride,
                 dilation=4,
                 maxpool=True,
@@ -134,7 +134,7 @@ class PrecTime(nn.Module):
                     in_channels=self.hidden_channels,
                     out_channels=self.hidden_channels,
                     kernel_size=self.kernel_size,
-                    padding=self.padding,
+                    padding=8,
                     stride=self.stride,
                     dilation=4
                 )
@@ -156,18 +156,19 @@ class PrecTime(nn.Module):
         #     (self.fe1out_shape + self.fe2out_shape)
 
         self.fc1 = nn.Linear(
-            256 * (self.sequence_length // self.chunks // 2), 64
+            self.hidden_channels * 2 *
+            (self.sequence_length // self.chunks // 2), 64
         )
 
         # 中间RNN层
         self.context_detection1 = nn.LSTM(
             input_size=64,
-            hidden_size=128,
+            hidden_size=100,
             num_layers=2,
             bidirectional=True
         )
         self.context_detection2 = nn.LSTM(
-            input_size=256,
+            input_size=200,
             hidden_size=128,
             num_layers=2,
             bidirectional=True
@@ -176,7 +177,10 @@ class PrecTime(nn.Module):
             scale_factor=self.sequence_length // self.chunks,
             mode='nearest'
         )
-        self.inter_fc = nn.Linear(in_features=256, out_features=3)
+        self.inter_fc = nn.Linear(
+            in_features=self.context_detection2.hidden_size * 2,
+            out_features=3
+        )
 
         self.inter_upsample_di = nn.Upsample(
             scale_factor=self.sequence_length // self.chunks // 2,
@@ -189,8 +193,8 @@ class PrecTime(nn.Module):
 
         self.prediction_refinement = nn.Sequential(
             conv1d_block(
-                in_channels=512,
-                out_channels=128,
+                in_channels=self.hidden_channels * 2 + self.context_detection2.hidden_size * 2,
+                out_channels=self.hidden_channels,
                 kernel_size=self.kernel_size,
                 padding=2,
                 stride=self.stride,
@@ -200,8 +204,8 @@ class PrecTime(nn.Module):
             ),
             nn.Upsample(scale_factor=2, mode='nearest'),
             conv1d_block(
-                in_channels=128,
-                out_channels=128,
+                in_channels=self.hidden_channels,
+                out_channels=self.hidden_channels,
                 kernel_size=self.kernel_size,
                 padding=2,
                 stride=self.stride,
@@ -212,11 +216,20 @@ class PrecTime(nn.Module):
             nn.Dropout(p=0.5)
         )
 
-        self.fc_final = nn.Linear(128, num_classes)
+        self.fc_final = nn.Linear(self.hidden_channels, num_classes)
 
     def forward(self, x):
         if x.shape[-1] % self.chunks != 0:
-            print(ValueError("Sequence_Length Should be Divided by Num_Chunks"))
+            print(ValueError("Seq Length Should be Divided by Num_Chunks"))
+
+        if x.shape[1] != self.input_channels:
+            print(ValueError(
+                "The Channel of Your Input should equal to Defined Input Channel"))
+
+        if x.shape[-1] != self.sequence_length:
+            print(ValueError(
+                "The Length of Your Input should equal to Defined Seq Length"))
+
         x = x.reshape(
             -1,
             self.input_channels,
@@ -249,7 +262,7 @@ class PrecTime(nn.Module):
         output1 = self.inter_upsample(output1)
         print("The first output after upsample:", output1.shape)
         output1 = output1.permute(0, 2, 1)
-        print(output1.shape)
+        # print(output1.shape)
         output1 = self.inter_fc(output1)
         print("The first output after fc:", output1.shape)
 
@@ -271,11 +284,16 @@ class PrecTime(nn.Module):
 
 
 Model = PrecTime(
-    input_channels=10,
+    input_channels=4,
+    hidden_channels=64,
     num_classes=3,
     sequence_length=720,
-    chunks=4
+    chunks=8
 )
 print(Model)
-x = torch.randn(1, 10, 720)
+
+total_params = sum(p.numel() for p in Model.parameters())
+print(f"Total parameters: {total_params}")
+
+x = torch.randn(1, 4, 720)
 output = Model(x)
