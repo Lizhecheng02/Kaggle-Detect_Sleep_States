@@ -178,23 +178,41 @@ class PrecTime(nn.Module):
         )
         self.inter_fc = nn.Linear(in_features=256, out_features=3)
 
+        self.inter_upsample_di = nn.Upsample(
+            scale_factor=self.sequence_length // self.chunks // 2,
+            mode='nearest'
+        )
+        # self.inter_upsample_ui = nn.Upsample(
+        #     scale_factor=2,
+        #     mode='nearest'
+        # )
+
         self.prediction_refinement = nn.Sequential(
             conv1d_block(
-                in_channels=input_channels,
+                in_channels=512,
                 out_channels=128,
+                kernel_size=self.kernel_size,
+                padding=2,
+                stride=self.stride,
+                dilation=self.dilation,
                 maxpool=False,
                 dropout=False
             ),
             nn.Upsample(scale_factor=2, mode='nearest'),
             conv1d_block(
-                in_channels=input_channels,
+                in_channels=128,
                 out_channels=128,
+                kernel_size=self.kernel_size,
+                padding=2,
+                stride=self.stride,
+                dilation=self.dilation,
                 maxpool=False,
                 dropout=True
-            )
+            ),
+            nn.Dropout(p=0.5)
         )
 
-        # self.fc_final = nn.Linear(400, num_classes)
+        self.fc_final = nn.Linear(128, num_classes)
 
     def forward(self, x):
         if x.shape[-1] % self.chunks != 0:
@@ -232,13 +250,29 @@ class PrecTime(nn.Module):
         output1 = self.inter_fc(output1)
         print(output1.shape)
 
+        di = context2.permute(0, 2, 1)
+        print(di.shape)
+        di = self.inter_upsample_di(di)
+        print(di.shape)
+        ui = features_combined.reshape(1, features_combined.shape[1], -1)
+        print(ui.shape)
+        # ui = self.inter_upsample2(ui)
+        # print(ui.shape)
+        combine_ui_di = torch.cat([ui, di], dim=1)
+        print(combine_ui_di.shape)
+
+        final_output = self.prediction_refinement(combine_ui_di)
+        print(final_output.shape)
+        final_output = self.fc_final(final_output.permute(0, 2, 1))
+        print(final_output.shape)
+
 
 Model = PrecTime(
-    input_channels=32,
+    input_channels=10,
     num_classes=3,
-    sequence_length=1024,
+    sequence_length=720,
     chunks=4
 )
 print(Model)
-x = torch.randn(1, 32, 1024)
+x = torch.randn(1, 10, 720)
 output = Model(x)
