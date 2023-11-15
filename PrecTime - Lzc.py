@@ -232,12 +232,6 @@ class PrecTime(nn.Module):
         output1 = self.inter_fc(output1)
         print(output1.shape)
 
-        # context_upsampled = self.inter_upsample(context2)
-        # print(context_upsampled.shape)
-
-        # output1 = self.inter_fc(context_upsampled)
-        # print(output1.shape)
-
 
 Model = PrecTime(
     input_channels=32,
