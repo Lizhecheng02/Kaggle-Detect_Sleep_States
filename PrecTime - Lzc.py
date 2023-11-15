@@ -222,49 +222,52 @@ class PrecTime(nn.Module):
             self.input_channels,
             x.shape[-1] // self.chunks
         )
-        print(x.shape)
+        print("The shape put into feature extraction:", x.shape)
 
         features1 = self.feature_extraction1(x)
-        print(features1.shape)
+        print("The output shape from left feature extraction:", features1.shape)
         features2 = self.feature_extraction2(x)
-        print(features2.shape)
+        print("The output shape from right feature extraction:", features2.shape)
         features_combined = torch.cat((features1, features2), dim=1)
-        print(features_combined.shape)
+        print("The shape after the concate of two output:",
+              features_combined.shape)
 
         features_combined_flat = features_combined.view(1, self.chunks, -1)
-        print(features_combined_flat.shape)
+        print("The shape after the flatten of concat output:",
+              features_combined_flat.shape)
         features_combined_flat = self.fc1(features_combined_flat)
-        print(features_combined_flat.shape)
+        print("The shape after using fc to reduce dimension:",
+              features_combined_flat.shape)
 
         context1, _ = self.context_detection1(features_combined_flat)
-        print(context1.shape)
+        print("The output shape after first LSTM:", context1.shape)
         context2, _ = self.context_detection2(context1)
-        print(context2.shape)
+        print("The output shape after second LSTM:", context2.shape)
 
         output1 = context2.permute(0, 2, 1)
-        print(output1.shape)
+        # print(output1.shape)
         output1 = self.inter_upsample(output1)
-        print(output1.shape)
+        print("The first output after upsample:", output1.shape)
         output1 = output1.permute(0, 2, 1)
         print(output1.shape)
         output1 = self.inter_fc(output1)
-        print(output1.shape)
+        print("The first output after fc:", output1.shape)
 
         di = context2.permute(0, 2, 1)
-        print(di.shape)
+        # print(di.shape)
         di = self.inter_upsample_di(di)
-        print(di.shape)
+        print("The shape after upsampling Di:", di.shape)
         ui = features_combined.reshape(1, features_combined.shape[1], -1)
-        print(ui.shape)
+        print("The shape after Reshaping Ui:", ui.shape)
         # ui = self.inter_upsample2(ui)
         # print(ui.shape)
         combine_ui_di = torch.cat([ui, di], dim=1)
-        print(combine_ui_di.shape)
+        print("The shape after combining Ui and Di:", combine_ui_di.shape)
 
         final_output = self.prediction_refinement(combine_ui_di)
-        print(final_output.shape)
+        print("The shape after prediction refinement:", final_output.shape)
         final_output = self.fc_final(final_output.permute(0, 2, 1))
-        print(final_output.shape)
+        print("The final shape after fc:", final_output.shape)
 
 
 Model = PrecTime(
