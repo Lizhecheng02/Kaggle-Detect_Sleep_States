@@ -219,6 +219,8 @@ class PrecTime(nn.Module):
         self.fc_final = nn.Linear(self.hidden_channels, num_classes)
 
     def forward(self, x):
+        origin_x = x
+
         if x.shape[-1] % self.chunks != 0:
             print(ValueError("Seq Length Should be Divided by Num_Chunks"))
 
@@ -245,7 +247,8 @@ class PrecTime(nn.Module):
         print("The shape after the concate of two output:",
               features_combined.shape)
 
-        features_combined_flat = features_combined.view(1, self.chunks, -1)
+        features_combined_flat = features_combined.view(
+            origin_x.shape[0], self.chunks, -1)
         print("The shape after the flatten of concat output:",
               features_combined_flat.shape)
         features_combined_flat = self.fc1(features_combined_flat)
@@ -270,7 +273,9 @@ class PrecTime(nn.Module):
         # print(di.shape)
         di = self.inter_upsample_di(di)
         print("The shape after upsampling Di:", di.shape)
-        ui = features_combined.reshape(1, features_combined.shape[1], -1)
+        ui = features_combined.reshape(
+            origin_x.shape[0], features_combined.shape[1], -1
+        )
         print("The shape after Reshaping Ui:", ui.shape)
         # ui = self.inter_upsample2(ui)
         # print(ui.shape)
@@ -284,7 +289,7 @@ class PrecTime(nn.Module):
 
 
 Model = PrecTime(
-    input_channels=4,
+    input_channels=32,
     hidden_channels=64,
     num_classes=3,
     sequence_length=720,
@@ -295,5 +300,5 @@ print(Model)
 total_params = sum(p.numel() for p in Model.parameters())
 print(f"Total parameters: {total_params}")
 
-x = torch.randn(1, 4, 720)
+x = torch.randn(3, 32, 720)
 output = Model(x)
