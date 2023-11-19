@@ -42,7 +42,7 @@ class PrecTime(nn.Module):
         padding1=2,   # 根据输入自动调节
         padding2=2,
         padding3=2,
-        stride1=1,   # 两个stride默认设置为1
+        stride1=1,   # 三个stride默认设置为1
         stride2=1,
         stride3=1,
         dilation1=1,
@@ -232,6 +232,8 @@ class PrecTime(nn.Module):
             print(ValueError(
                 "The Length of Your Input should equal to Defined Seq Length"))
 
+        print("The shape of input:", x.shape)
+
         x = x.reshape(
             -1,
             self.input_channels,
@@ -289,7 +291,7 @@ class PrecTime(nn.Module):
 
 
 Model = PrecTime(
-    input_channels=32,
+    input_channels=4,
     hidden_channels=64,
     kernel_size2=5,
     kernel_size3=7,
@@ -309,7 +311,7 @@ print(Model)
 total_params = sum(p.numel() for p in Model.parameters())
 print(f"Total parameters: {total_params}")
 
-x = torch.randn(3, 32, 720)
+x = torch.randn(3, 4, 720)
 output = Model(x)
 
 
