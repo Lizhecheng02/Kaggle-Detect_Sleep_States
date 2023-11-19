@@ -56,8 +56,6 @@ class PrecTime(nn.Module):
         self.chunks = chunks
         self.fe1_layers = fe1_layers
         self.fe2_layers = fe2_layers
-        # self.fe1out_shape = 0
-        # self.fe2out_shape = 0
 
         # 左侧特征提取分支
         feature_extraction1_layer = []
@@ -106,7 +104,6 @@ class PrecTime(nn.Module):
         # print("The Final Dimension of FE1 is:", self.fe1out_shape)
 
         # 右侧特征提取分支
-        # self.padding = 8
         feature_extraction2_layer = []
         feature_extraction2_layer.extend([
             conv1d_block(
@@ -164,13 +161,13 @@ class PrecTime(nn.Module):
         self.context_detection1 = nn.LSTM(
             input_size=64,
             hidden_size=100,
-            num_layers=2,
+            num_layers=1,
             bidirectional=True
         )
         self.context_detection2 = nn.LSTM(
             input_size=200,
             hidden_size=128,
-            num_layers=2,
+            num_layers=1,
             bidirectional=True
         )
         self.inter_upsample = nn.Upsample(
@@ -273,9 +270,9 @@ class PrecTime(nn.Module):
         # print(di.shape)
         di = self.inter_upsample_di(di)
         print("The shape after upsampling Di:", di.shape)
-        ui = features_combined.reshape(
-            origin_x.shape[0], features_combined.shape[1], -1
-        )
+        ui = features_combined.transpose(0, 1).reshape(
+            features_combined.shape[1], origin_x.shape[0], -1
+        ).transpose(0, 1)
         print("The shape after Reshaping Ui:", ui.shape)
         # ui = self.inter_upsample2(ui)
         # print(ui.shape)
