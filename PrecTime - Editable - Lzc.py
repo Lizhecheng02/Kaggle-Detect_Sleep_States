@@ -36,69 +36,70 @@ class PrecTime(nn.Module):
         input_channels=8,
         hidden_channels=128,
         output_channels=128,
-        kernel_size1=5,
-        kernel_size2=5,
-        kernel_size3=5,
-        padding1=2,   # 根据输入自动调节
-        padding2=2,
-        padding3=2,
-        stride1=1,   # 三个stride默认设置为1
-        stride2=1,
-        stride3=1,
-        dilation1=1,
-        dilation2=1,
-        dilation3=1,
+        left_fe_kernel_size=5,
+        right_fe_kernel_size=5,
+        pr_kernel_size=5,
+        left_fe_padding=2,   # 根据输入自动调节
+        right_fe_padding=2,
+        pr_padding=2,
+        left_fe_stride=1,   # 三个stride默认设置为1
+        right_fe_stride=1,
+        pr_stride=1,
+        left_fe_dilation=1,
+        right_fe_dilation=1,
+        pr_dilation=1,
         sequence_length=1024,
         num_classes=3,
         chunks=6,
-        fe1_layers=3,
-        fe2_layers=3,
-        fc1_dimension=64,
+        num_left_fe_layers=3,
+        num_right_fe_layers=3,
+        fe_fc_dimension=64,
         lstm1_dimension=100,
-        lstm2_dimension=100,
-        inter_fc_dimension=3
+        lstm2_dimension=100
     ):
         super(PrecTime, self).__init__()
 
         self.input_channels = input_channels
         self.hidden_channels = hidden_channels
         self.output_channels = output_channels
-        self.kernel_size1 = kernel_size1
-        self.kernel_size2 = kernel_size2
-        self.kernel_size3 = kernel_size3
-        self.padding1 = padding1
-        self.padding2 = padding2
-        self.padding3 = padding3
-        self.stride1 = stride1
-        self.stride2 = stride2
-        self.stride3 = stride3
-        self.dilation1 = dilation1
-        self.dilation2 = dilation2
-        self.dilation3 = dilation3
+        self.left_fe_kernel_size = left_fe_kernel_size
+        self.right_fe_kernel_size = right_fe_kernel_size
+        self.pr_kernel_size = pr_kernel_size
+        self.left_fe_padding = left_fe_padding
+        self.right_fe_padding = right_fe_padding
+        self.pr_padding = pr_padding
+        self.left_fe_stride = left_fe_stride
+        self.right_fe_stride = right_fe_stride
+        self.pr_stride = pr_stride
+        self.left_fe_dilation = left_fe_dilation
+        self.right_fe_dilation = right_fe_dilation
+        self.pr_dilation = pr_dilation
         self.sequence_length = sequence_length
         self.num_classes = num_classes
         self.chunks = chunks
-        self.fe1_layers = fe1_layers
-        self.fe2_layers = fe2_layers
-        self.fc1_dimension = fc1_dimension
+        self.num_left_fe_layers = num_left_fe_layers
+        self.num_right_fe_layers = num_right_fe_layers
+        self.fe_fc_dimension = fe_fc_dimension
         self.lstm1_dimension = lstm1_dimension
         self.lstm2_dimension = lstm2_dimension
-        self.inter_fc_dimension = inter_fc_dimension
 
-        if self.dilation1 * (self.kernel_size1 - 1) % 2 != 0:
+        if self.left_fe_dilation * (self.left_fe_kernel_size - 1) % 2 != 0:
             print(ValueError("Please re-input dilation, kernel_size!!!"))
         else:
-            self.padding1 = (self.dilation1 * (self.kernel_size1 - 1)) // 2
+            self.left_fe_padding = (
+                self.left_fe_dilation * (self.left_fe_kernel_size - 1)) // 2
 
-        if self.dilation2 * (self.kernel_size2 - 1) % 2 != 0:
+        if self.right_fe_dilation * (self.right_fe_kernel_size - 1) % 2 != 0:
             print(ValueError("Please re-input dilation, kernel_size!!!"))
         else:
-            self.padding2 = (self.dilation2 * (self.kernel_size2 - 1)) // 2
+            self.right_fe_padding = (
+                self.right_fe_dilation * (self.right_fe_kernel_size - 1)) // 2
 
-        if self.dilation3 * (self.kernel_size3 - 1) % 2 != 0:
+        if self.pr_dilation * (self.pr_kernel_size - 1) % 2 != 0:
             print(ValueError("Please re-input dilation, kernel_size!!!"))
         else:
-            self.padding3 = (self.dilation3 * (self.kernel_size3 - 1)) // 2
+            self.pr_padding = (self.pr_dilation *
+                               (self.pr_kernel_size - 1)) // 2
 
         # 左侧特征提取分支
         feature_extraction1_layer = []
@@ -106,23 +107,23 @@ class PrecTime(nn.Module):
             conv1d_block(
                 in_channels=self.input_channels,
                 out_channels=self.hidden_channels,
-                kernel_size=self.kernel_size1,
-                padding=self.padding1,
-                stride=self.stride1,
-                dilation=self.dilation1,
+                kernel_size=self.left_fe_kernel_size,
+                padding=self.left_fe_padding,
+                stride=self.left_fe_stride,
+                dilation=self.left_fe_dilation,
                 maxpool=True,
                 dropout=True
             )
         )
-        for i in range(self.fe1_layers):
+        for i in range(self.num_left_fe_layers):
             feature_extraction1_layer.extend([
                 conv1d_block(
                     in_channels=self.hidden_channels,
                     out_channels=self.hidden_channels,
-                    kernel_size=self.kernel_size1,
-                    padding=self.padding1,
-                    stride=self.stride1,
-                    dilation=self.dilation1
+                    kernel_size=self.left_fe_kernel_size,
+                    padding=self.left_fe_padding,
+                    stride=self.left_fe_stride,
+                    dilation=self.left_fe_dilation
                 )
             ])
         self.feature_extraction1 = nn.Sequential(
@@ -135,37 +136,37 @@ class PrecTime(nn.Module):
             conv1d_block(
                 in_channels=self.input_channels,
                 out_channels=self.hidden_channels,
-                kernel_size=self.kernel_size2,
-                padding=self.padding2,
-                stride=self.stride2,
-                dilation=self.dilation2,
+                kernel_size=self.right_fe_kernel_size,
+                padding=self.right_fe_padding,
+                stride=self.right_fe_stride,
+                dilation=self.right_fe_dilation,
                 maxpool=True,
                 dropout=True
             )
         )
-        for i in range(self.fe2_layers):
+        for i in range(self.num_right_fe_layers):
             feature_extraction2_layer.extend([
                 conv1d_block(
                     in_channels=self.hidden_channels,
                     out_channels=self.hidden_channels,
-                    kernel_size=self.kernel_size2,
-                    padding=self.padding2,
-                    stride=self.stride2,
-                    dilation=self.dilation2
+                    kernel_size=self.right_fe_kernel_size,
+                    padding=self.right_fe_padding,
+                    stride=self.right_fe_stride,
+                    dilation=self.right_fe_dilation
                 )
             ])
         self.feature_extraction2 = nn.Sequential(
             *feature_extraction2_layer
         )
 
-        self.fc1 = nn.Linear(
+        self.fc_after_fe = nn.Linear(
             self.hidden_channels * 2 *
-            (self.sequence_length // self.chunks // 2), self.fc1_dimension
+            (self.sequence_length // self.chunks // 2), self.fe_fc_dimension
         )
 
         # 中间RNN层
         self.context_detection1 = nn.LSTM(
-            input_size=self.fc1_dimension,
+            input_size=self.fe_fc_dimension,
             hidden_size=self.lstm1_dimension,
             num_layers=1,
             bidirectional=True
@@ -183,7 +184,7 @@ class PrecTime(nn.Module):
         )
         self.inter_fc = nn.Linear(
             in_features=self.lstm2_dimension * 2,
-            out_features=self.inter_fc_dimension
+            out_features=self.num_classes
         )
 
         self.inter_upsample_di = nn.Upsample(
@@ -195,10 +196,10 @@ class PrecTime(nn.Module):
             conv1d_block(
                 in_channels=self.hidden_channels * 2 + self.lstm2_dimension * 2,
                 out_channels=self.output_channels,
-                kernel_size=self.kernel_size3,
-                padding=self.padding3,
-                stride=self.stride3,
-                dilation=self.dilation3,
+                kernel_size=self.pr_kernel_size,
+                padding=self.pr_padding,
+                stride=self.pr_stride,
+                dilation=self.pr_dilation,
                 maxpool=False,
                 dropout=False
             ),
@@ -206,10 +207,10 @@ class PrecTime(nn.Module):
             conv1d_block(
                 in_channels=self.output_channels,
                 out_channels=self.output_channels,
-                kernel_size=self.kernel_size3,
-                padding=self.padding3,
-                stride=self.stride3,
-                dilation=self.dilation3,
+                kernel_size=self.pr_kernel_size,
+                padding=self.pr_padding,
+                stride=self.pr_stride,
+                dilation=self.pr_dilation,
                 maxpool=False,
                 dropout=True
             ),
@@ -251,7 +252,7 @@ class PrecTime(nn.Module):
             origin_x.shape[0], self.chunks, -1)
         print("The shape after the flatten of concat output:",
               features_combined_flat.shape)
-        features_combined_flat = self.fc1(features_combined_flat)
+        features_combined_flat = self.fc_after_fe(features_combined_flat)
         print("The shape after using fc to reduce dimension:",
               features_combined_flat.shape)
 
@@ -291,13 +292,13 @@ class PrecTime(nn.Module):
 Model = PrecTime(
     input_channels=4,
     hidden_channels=64,
-    kernel_size2=5,
-    kernel_size3=7,
-    stride2=1,
-    stride3=1,
-    dilation2=4,
-    dilation3=6,
-    fc1_dimension=32,
+    right_fe_kernel_size=5,
+    pr_kernel_size=7,
+    right_fe_stride=1,
+    pr_stride=1,
+    right_fe_dilation=4,
+    pr_dilation=6,
+    fe_fc_dimension=32,
     lstm1_dimension=64,
     lstm2_dimension=128,
     num_classes=3,
@@ -316,24 +317,23 @@ output = Model(x)
 # input_channels,
 # hidden_channels=128,
 # output_channels=128,
-# kernel_size1=5,
-# kernel_size2=5,
-# kernel_size3=5,
-# padding1=2,   # 根据输入自动调节
-# padding2=2,
-# padding3=2,
-# stride1=1,   # 两个stride默认设置为1
-# stride2=1,
-# stride3=1,
-# dilation1=1,
-# dilation2=1,
-# dilation3=1,
+# left_fe_kernel_size=5,
+# right_fe_kernel_size=5,
+# pr_kernel_size=5,
+# left_fe_padding=2,   # 根据输入自动调节
+# right_fe_padding=2,
+# pr_padding=2,
+# left_fe_stride=1,   # 两个stride默认设置为1
+# right_fe_stride=1,
+# pr_stride=1,
+# left_fe_dilation=1,
+# right_fe_dilation=1,
+# pr_dilation=1,
 # sequence_length=1024,
 # num_classes=3,
 # chunks=6,
-# fe1_layers=3,
-# fe2_layers=3,
-# fc1_dimension=64,
+# num_left_fe_layers=3,
+# num_right_fe_layers=3,
+# fe_fc_dimension=64,
 # lstm1_dimension=100,
-# lstm2_dimension=100,
-# inter_fc_dimension=3
+# lstm2_dimension=100
