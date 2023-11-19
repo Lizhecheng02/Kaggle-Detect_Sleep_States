@@ -234,11 +234,9 @@ class PrecTime(nn.Module):
 
         print("The shape of input:", x.shape)
 
-        x = x.reshape(
-            -1,
-            self.input_channels,
-            x.shape[-1] // self.chunks
-        )
+        x = x.transpose(0, 1).reshape(
+            x.shape[1], -1, x.shape[2] // self.chunks
+        ).transpose(0, 1)
         print("The shape put into feature extraction:", x.shape)
 
         features1 = self.feature_extraction1(x)
