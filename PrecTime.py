@@ -162,13 +162,15 @@ class PrecTime(nn.Module):
             input_size=64,
             hidden_size=100,
             num_layers=1,
-            bidirectional=True
+            bidirectional=True,
+            batch_first=True
         )
         self.context_detection2 = nn.LSTM(
             input_size=200,
             hidden_size=128,
             num_layers=1,
-            bidirectional=True
+            bidirectional=True,
+            batch_first=True
         )
         self.inter_upsample = nn.Upsample(
             scale_factor=self.sequence_length // self.chunks,
