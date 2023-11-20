@@ -1,6 +1,8 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torchviz import make_dot
+from torchsummary import summary
 
 
 def conv1d_block(
@@ -392,6 +394,8 @@ class PrecTime(nn.Module):
         final_output = self.fc_final(final_output.permute(0, 2, 1))
         print("The final shape after fc:", final_output.shape)
 
+        return final_output
+
 
 Model = PrecTime(
     input_channels=4,
@@ -415,3 +419,7 @@ print(f"Total parameters: {total_params}")
 
 x = torch.randn(3, 4, 720)
 output = Model(x)
+
+# summary(Model, (3, 4, 720))
+# graph = make_dot(output.mean(), params=dict(Model.named_parameters()))
+# graph.render('PrecTime.png', format='png')
