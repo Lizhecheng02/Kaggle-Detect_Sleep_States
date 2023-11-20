@@ -66,19 +66,6 @@ def transformer_encoder_model(
     return transformer_encoder
 
 
-# class LSTM_Encoder(nn.Module):
-#     def __init__(self, lstm_layers):
-#         self.lstm_layers = nn.ModuleList(lstm_layers)
-
-#     def forward(self, x):
-#         h_n, c_n = None, None
-#         for lstm in self.lstm_layers:
-#             x, (h_n, c_n) = lstm(
-#                 x, (h_n, c_n) if h_n is not None and c_n is not None else None
-#             )
-#         return x
-
-
 class PrecTime(nn.Module):
     def __init__(
         self,
@@ -240,20 +227,6 @@ class PrecTime(nn.Module):
         )
 
         if self.encoder_type == "lstm":
-            # 中间LSTM层
-            # self.context_detection1 = nn.LSTM(
-            #     input_size=self.fe_fc_dimension,
-            #     hidden_size=self.lstm1_dimension,
-            #     num_layers=1,
-            #     bidirectional=True
-            # )
-            # self.context_detection2 = nn.LSTM(
-            #     input_size=self.lstm1_dimension * 2,
-            #     hidden_size=self.lstm2_dimension,
-            #     num_layers=1,
-            #     bidirectional=True
-            # )
-
             lstm_layers = []
             for i in range(self.num_lstm_layers):
                 if i == 0:
@@ -262,7 +235,8 @@ class PrecTime(nn.Module):
                             input_size=self.fe_fc_dimension,
                             hidden_size=self.lstm_dimensions[i],
                             num_layers=1,
-                            bidirectional=True
+                            bidirectional=True,
+                            batch_first=True
                         )
                     ])
 
@@ -272,7 +246,8 @@ class PrecTime(nn.Module):
                             input_size=self.lstm_dimensions[i - 1] * 2,
                             hidden_size=self.lstm_dimensions[i],
                             num_layers=1,
-                            bidirectional=True
+                            bidirectional=True,
+                            batch_first=True
                         )
                     ])
 
@@ -436,28 +411,3 @@ print(f"Total parameters: {total_params}")
 
 x = torch.randn(3, 4, 720)
 output = Model(x)
-
-
-# input_channels,
-# hidden_channels=128,
-# output_channels=128,
-# left_fe_kernel_size=5,
-# right_fe_kernel_size=5,
-# pr_kernel_size=5,
-# left_fe_padding=2,   # 根据输入自动调节
-# right_fe_padding=2,
-# pr_padding=2,
-# left_fe_stride=1,   # 两个stride默认设置为1
-# right_fe_stride=1,
-# pr_stride=1,
-# left_fe_dilation=1,
-# right_fe_dilation=1,
-# pr_dilation=1,
-# sequence_length=1024,
-# num_classes=3,
-# chunks=6,
-# num_left_fe_layers=3,
-# num_right_fe_layers=3,
-# fe_fc_dimension=64,
-# lstm1_dimension=100,
-# lstm2_dimension=100
