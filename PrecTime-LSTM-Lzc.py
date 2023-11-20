@@ -290,6 +290,8 @@ class PrecTime(nn.Module):
         final_output = self.fc_final(final_output.permute(0, 2, 1))
         print("The final shape after fc:", final_output.shape)
 
+        return final_output
+
 
 Model = PrecTime(
     input_channels=4,
