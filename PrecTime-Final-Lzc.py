@@ -57,7 +57,8 @@ def transformer_encoder_model(
         nhead=nhead,
         dim_feedforward=dim_feedforward,
         dropout=dropout,
-        activation=activation
+        activation=activation,
+        batch_first=True
     )
     transformer_encoder = nn.TransformerEncoder(
         encoder_layer,
@@ -359,8 +360,11 @@ class PrecTime(nn.Module):
                     context2, _ = lstm(context2)
 
         if self.encoder_type == "transformer":
+            # features_combined_flat = features_combined_flat.transpose(0, 1)
             context2 = self.transformer_encoder(features_combined_flat)
+            # context2 = context2.transpose(0, 1)
 
+        print("The shape after encoder:", context2.shape)
         output1 = context2.permute(0, 2, 1)
         # print(output1.shape)
         output1 = self.inter_upsample(output1)
@@ -402,7 +406,7 @@ Model = PrecTime(
     num_classes=3,
     sequence_length=720,
     chunks=4,
-    encoder_type="lstm"
+    encoder_type="transformer"
 )
 print(Model)
 
