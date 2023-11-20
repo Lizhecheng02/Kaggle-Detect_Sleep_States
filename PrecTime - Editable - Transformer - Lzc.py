@@ -210,7 +210,7 @@ class PrecTime(nn.Module):
             (self.sequence_length // self.chunks // 2), self.fe_fc_dimension
         )
 
-        # 中间RNN层
+        # 中间LSTM层
         # self.context_detection1 = nn.LSTM(
         #     input_size=self.fe_fc_dimension,
         #     hidden_size=self.lstm1_dimension,

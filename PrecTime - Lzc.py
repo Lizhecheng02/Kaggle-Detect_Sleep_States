@@ -157,7 +157,7 @@ class PrecTime(nn.Module):
             (self.sequence_length // self.chunks // 2), 64
         )
 
-        # 中间RNN层
+        # 中间LSTM层
         self.context_detection1 = nn.LSTM(
             input_size=64,
             hidden_size=100,
