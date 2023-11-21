@@ -399,6 +399,7 @@ class PrecTime(nn.Module):
 
 Model = PrecTime(
     input_channels=4,
+    output_channels=64,
     right_fe_kernel_size=5,
     pr_kernel_size=7,
     right_fe_stride=1,
