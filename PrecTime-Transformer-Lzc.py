@@ -315,12 +315,8 @@ class PrecTime(nn.Module):
         print("The shape after using fc to reduce dimension:",
               features_combined_flat.shape)
 
-        # context1, _ = self.context_detection1(features_combined_flat)
-        # print("The output shape after first LSTM:", context1.shape)
-        # context2, _ = self.context_detection2(context1)
-        # print("The output shape after second LSTM:", context2.shape)
-
         context2 = self.transformer_encoder(features_combined_flat)
+        print("The shape after transformer:", context2.shape)
 
         output1 = context2.permute(0, 2, 1)
         # print(output1.shape)
