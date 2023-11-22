@@ -12,6 +12,10 @@
 
   **Use LSTM models for Inter-Window Context Detection**
 
+- PrecTime - GRU
+
+  **Use GRU models for Inter-Window Context Detection**
+
 - PrecTime - Transformer
 
   **Replace LSTM by Transformer for Inter-Window Context Detection**
