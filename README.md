@@ -5,7 +5,8 @@
 #### Reproduce According to [PrecTime: A Deep Learning Architecture for Precise Time Series Segmentation in Industrial Manufacturing Operations](https://arxiv.org/abs/2302.10182)
 
 - PrecTime.py
-**Base model with constant parameters**
+
+  **Base model with constant parameters**
 
 - PrecTime - LSTM
 
