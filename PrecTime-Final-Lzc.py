@@ -96,6 +96,8 @@ class PrecTime(nn.Module):
         fe_fc_dimension=64,
         lstm_dimensions=[100, 200],
         num_lstm_layers=2,
+        gru_dimensions=[100, 200],
+        num_gru_layers=2,
         n_head=2,
         num_encoder_layers=2,
         dim_feedforward=128,
@@ -129,6 +131,8 @@ class PrecTime(nn.Module):
         self.fe_fc_dimension = fe_fc_dimension
         self.lstm_dimensions = lstm_dimensions
         self.num_lstm_layers = num_lstm_layers
+        self.gru_dimensions = gru_dimensions
+        self.num_gru_layers = num_gru_layers
         self.n_head = n_head
         self.num_encoder_layers = num_encoder_layers
         self.dim_feedforward = dim_feedforward
@@ -137,7 +141,7 @@ class PrecTime(nn.Module):
         self.encoder_type = encoder_type
 
         # 自动调整参数
-        if self.encoder_type not in ["lstm", "transformer"]:
+        if self.encoder_type not in ["lstm", "transformer", "gru"]:
             print("Please enter the right type of encoder!!!")
 
         if self.num_left_fe_layers != len(self.left_hidden_channels):
@@ -146,6 +150,8 @@ class PrecTime(nn.Module):
             self.num_right_fe_layers = len(self.right_hidden_channels)
         if self.num_lstm_layers != len(self.lstm_dimensions):
             self.num_lstm_layers = len(self.lstm_dimensions)
+        if self.num_gru_layers != len(self.gru_dimensions):
+            self.num_gru_layers = len(self.gru_dimensions)
 
         if self.left_fe_dilation * (self.left_fe_kernel_size - 1) % 2 != 0:
             print(ValueError("Please re-input dilation, kernel_size!!!"))
@@ -258,6 +264,35 @@ class PrecTime(nn.Module):
 
             self.encoder_output_dimension = self.lstm_dimensions[-1] * 2
 
+        if self.encoder_type == "gru":
+            gru_layers = []
+            for i in range(self.num_gru_layers):
+                if i == 0:
+                    gru_layers.extend([
+                        nn.GRU(
+                            input_size=self.fe_fc_dimension,
+                            hidden_size=self.gru_dimensions[i],
+                            num_layers=1,
+                            bidirectional=True,
+                            batch_first=True
+                        )
+                    ])
+
+                else:
+                    gru_layers.extend([
+                        nn.GRU(
+                            input_size=self.gru_dimensions[i - 1] * 2,
+                            hidden_size=self.gru_dimensions[i],
+                            num_layers=1,
+                            bidirectional=True,
+                            batch_first=True
+                        )
+                    ])
+
+            self.gru = nn.Sequential(*gru_layers)
+
+            self.encoder_output_dimension = self.gru_dimensions[-1] * 2
+
         if self.encoder_type == "transformer":
             # 中间Transformer层
             self.transformer_encoder = transformer_encoder_model(
@@ -351,15 +386,18 @@ class PrecTime(nn.Module):
               features_combined_flat.shape)
 
         if self.encoder_type == "lstm":
-            # context1, _ = self.context_detection1(features_combined_flat)
-            # print("The output shape after first LSTM:", context1.shape)
-            # context2, _ = self.context_detection2(context1)
-            # print("The output shape after second LSTM:", context2.shape)
             for idx, lstm in enumerate(self.lstm):
                 if idx == 0:
                     context2, _ = lstm(features_combined_flat)
                 else:
                     context2, _ = lstm(context2)
+
+        if self.encoder_type == "gru":
+            for idx, gru in enumerate(self.gru):
+                if idx == 0:
+                    context2, _ = gru(features_combined_flat)
+                else:
+                    context2, _ = gru(context2)
 
         if self.encoder_type == "transformer":
             # features_combined_flat = features_combined_flat.transpose(0, 1)
@@ -408,10 +446,11 @@ Model = PrecTime(
     pr_dilation=6,
     fe_fc_dimension=64,
     lstm_dimensions=[100, 100],
+    gru_dimensions=[66, 132],
     num_classes=3,
     sequence_length=720,
     chunks=4,
-    encoder_type="transformer"
+    encoder_type="gru"
 )
 print(Model)
 
